@@ -1,26 +1,60 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
+import { Vehicle } from './entities/vehicle.entity';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 
 @Injectable()
 export class VehiclesService {
-  create(createVehicleDto: CreateVehicleDto) {
-    return 'This action adds a new vehicle';
+  constructor(
+    @InjectRepository(Vehicle)
+    private readonly repository: Repository<Vehicle>,
+  ) {}
+
+  async create(dto: CreateVehicleDto) {
+    const vehicle = this.repository.create(dto);
+
+    try {
+      return await this.repository.save(vehicle);
+    } catch (error) {
+      if (error.code === '23505') {
+        throw new ConflictException(
+          'Veículo com placa, chassi ou renavam já cadastrado',
+        );
+      }
+
+      throw error;
+    }
   }
 
-  findAll() {
-    return `This action returns all vehicles`;
+  async findAll() {
+    return await this.repository.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} vehicle`;
+  async findOne(id: string) {
+    return await this.repository.findOneBy({ id });
   }
 
-  update(id: number, updateVehicleDto: UpdateVehicleDto) {
-    return `This action updates a #${id} vehicle`;
+  async update(id: string, dto: UpdateVehicleDto) {
+    const vehicle = await this.repository.findOneBy({ id });
+
+    if (!vehicle) {
+      return null;
+    }
+
+    this.repository.merge(vehicle, dto);
+    return this.repository.save(vehicle);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} vehicle`;
+  async remove(id: string) {
+    const vehicle = await this.repository.findOneBy({ id });
+
+    if (!vehicle) {
+      return null;
+    }
+
+    return this.repository.remove(vehicle);
   }
 }

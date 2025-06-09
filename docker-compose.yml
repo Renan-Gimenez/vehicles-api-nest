@@ -1,0 +1,10 @@
+services:
+  vehicles-api-pg:
+    container_name: vehicles-api-pg
+    image: bitnami/postgresql
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USERNAME=vehicles
+      - POSTGRES_PASSWORD=vehicles
+      - POSTGRES_DB=vehicles
